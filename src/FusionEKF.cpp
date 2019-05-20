@@ -37,14 +37,19 @@ FusionEKF::FusionEKF() {
    * TODO: Set the process and measurement noises
    */
   
+  // Process Noise
+  Hj_<< 1,1,0,0,
+  		1,1,0,0,
+  		1,1,1,1;
+  
   H_laser_ << 1, 0, 0, 0,
               0, 1, 0, 0;
   
   ekf_.P_ = MatrixXd(4, 4);
   ekf_.P_ << 1, 0, 0, 0,
   			 0, 1, 0, 0,
-  			 0, 0, 1000, 0,
-  			 0, 0, 0, 1000;
+  			 0, 0, 100, 0,
+  			 0, 0, 0, 100;
                        
 }
 
@@ -72,20 +77,14 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
     if (measurement_pack.sensor_type_ == MeasurementPackage::RADAR) {
       // TODO: Convert radar from polar to cartesian coordinates 
       //         and initialize state.
-      double r = measurement_pack.raw_measurements_[0];
-      double theta = measurement_pack.raw_measurements_[1];
-      //double r_d = measurement_pack.raw_measurements_[2];
-      double x = r * cos(theta);
-      double y = r * sin(theta);
-      //double vx = r_d * cos(theta);
-      //double vy = r_d * sin(theta);
-      
-      if ( x < 0.0001 ) {
-        x = 0.0001;
-      }
-      if ( y < 0.0001 ) {
-        y = 0.0001;
-      }
+      double rho = measurement_pack.raw_measurements_[0];
+      double phi = measurement_pack.raw_measurements_[1];
+      //double rhodot = measurement_pack.raw_measurements_[2];
+      double x = rho * cos(phi);
+      double y = rho * sin(phi);
+      // We don't have enough information for vx, vy. Here I initialize them with zero.
+      //vx = rhodot * cos(phi) + rho * sin(phi) * phidot
+      //vy = rhodot * sin(phi) + rho * cos(phi) * phidot
 
       ekf_.x_ << x, y, 0, 0;
     }
@@ -158,6 +157,7 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
 
   if (measurement_pack.sensor_type_ == MeasurementPackage::RADAR) {
     // TODO: Radar updates
+    ekf_.H_ = tools.CalculateJacobian(ekf_.x_);
     ekf_.R_ = R_radar_;
     ekf_.UpdateEKF(measurement_pack.raw_measurements_);
 
