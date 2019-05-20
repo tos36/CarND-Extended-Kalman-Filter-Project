@@ -66,7 +66,6 @@ void KalmanFilter::UpdateEKF(const VectorXd &z) {
   if( px == 0. && py == 0. ){
     return;
   }
-  Hj_ = tools.CalculateJacobian(x_);
   
   double rho = sqrt(px*px + py*py);
   double theta = atan2(py, px);
@@ -77,19 +76,16 @@ void KalmanFilter::UpdateEKF(const VectorXd &z) {
   
   VectorXd y = z - h;
   // Keep the angle of y is between -pi to pi
-  while(y[1] > M_PI || y[1] < -M_PI)
-  {
-    if(y[1] > M_PI)
-    {
+  while(y[1] > M_PI || y[1] < -M_PI){
+    if(y[1] > M_PI){
       y[1] -= 2 * M_PI;
     } 
-    else if (y[1] < M_PI)
-    {
+    else if (y[1] < M_PI){
       y[1] += 2 * M_PI;
     }
   }
   
-  MatrixXd Ht = Hj_.transpose();
+  MatrixXd Ht = H_.transpose();
   MatrixXd S = H_ * P_ * Ht + R_;
   MatrixXd Si = S.inverse();
   MatrixXd PHt = P_ * Ht;
